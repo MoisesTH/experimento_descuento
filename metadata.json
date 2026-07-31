@@ -1,0 +1,5 @@
+{
+  "name": "Temporal Discounting Experiment",
+  "description": "A psychological experiment app for studying temporal discounting and financial decision-making, based on a PsychoPy task.",
+  "requestFramePermissions": []
+}
