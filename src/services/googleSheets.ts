@@ -2,14 +2,14 @@
 
 export interface FilaEnsayo {
   order: number;       // 1 al 72
-  trial: number;       // Bloque de 24 (o �ndice interno)
+  trial: number;       // Bloque de 24
   budget: number;      // 200, 2000, 20000
   magnitude: number;   // 0, 1, 2
   start_day: number;   // 0 o 35
   delay: number;       // 35, 63, etc.
   rate: number;        // Tasa de descuento
   contrast: number;    // Contraste
-  choice: number;      // 1 al 6 (Opci�n A a F)
+  choice: number;      // 1 al 6 (Opción A a F)
   amount_now: number;  // Valor 'today' elegido
   amount_later: number;// Valor 'later' elegido
 }
@@ -23,26 +23,39 @@ export interface AssignmentResponse {
   error?: string;
 }
 
+// Usamos tu variable de entorno (recuerda configurarla en GitHub o en tu .env local)
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
 
+// ==========================================
+// 1. SOLICITAR ASIGNACIÓN (POST)
+// ==========================================
 export async function solicitarAsignacion(): Promise<AssignmentResponse> {
-  const response = await fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    // Usamos 'text/plain' o sin headers restrictivos para evitar preflight de CORS en POST
-    headers: {
-      'Content-Type': 'text/plain;charset=utf-8',
-    },
-    body: JSON.stringify({ accion: 'solicitarAsignacion' })
-  });
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+      body: JSON.stringify({ accion: 'solicitarAsignacion' })
+    });
 
-  if (!response.ok) {
-    throw new Error(`Error al solicitar asignación: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`Error al solicitar asignación: ${response.status} ${response.statusText}`);
+    }
+
+    const data: AssignmentResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error en solicitarAsignacion:", error);
+    throw error;
   }
-
-  return response.json();
 }
 
+// ==========================================
+// 2. ENVIAR RESULTADOS (POST)
+// ==========================================
 export async function enviarResultadosAGoogle(usuarioId: string, ensayos: FilaEnsayo[], idInterno?: string) {
+  // Mapeamos al formato en mayúsculas que espera tu backend en Google Apps Script
   const ensayosMayus = ensayos.map(e => ({
     ORDER: e.order,
     TRIAL: e.trial,
@@ -80,6 +93,10 @@ export async function enviarResultadosAGoogle(usuarioId: string, ensayos: FilaEn
     if (!response.ok) {
       throw new Error(`Error al enviar resultados: ${response.status} ${response.statusText}`);
     }
+
+    // Opcional: si tu script de envío también devuelve JSON y quieres leerlo
+    // const result = await response.json();
+    // return result;
 
     return true;
   } catch (error) {
