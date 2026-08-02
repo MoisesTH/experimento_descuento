@@ -24,7 +24,7 @@ export interface AssignmentResponse {
 }
 
 // Usamos tu variable de entorno (recuerda configurarla en GitHub o en tu .env local)
-const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxehZ7rFUkrEnukiaqUaljjP8Lz_nGQB14Ka98yWZYlzWdkA5Jv-I9nn6pTsdNGWFXw/exec";
 
 // ==========================================
 // 1. SOLICITAR ASIGNACIÓN (POST)
