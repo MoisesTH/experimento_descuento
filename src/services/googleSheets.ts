@@ -28,9 +28,6 @@ const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
 export async function solicitarAsignacion(): Promise<AssignmentResponse> {
   const response = await fetch(GOOGLE_SCRIPT_URL, {
     method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-    },
   });
 
   if (!response.ok) {
