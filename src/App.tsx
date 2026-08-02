@@ -8,6 +8,51 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Info, Banknote, Clock, CheckCircle2, User, Calendar, Coins, Coffee } from 'lucide-react';
 import { Screen, BlockData, Choice } from './types';
 import { STIMULI_GROUPS } from './constants';
+import { enviarResultadosAGoogle, solicitarAsignacion, FilaEnsayo } from './services/googleSheets';
+
+const RATE_SEQUENCE_BY_TRIAL = [
+  1.05, 1.11, 1.18, 1.25, 1.43, 1.82,
+  1.00, 1.05, 1.18, 1.33, 1.67, 2.22,
+  1.05, 1.11, 1.18, 1.25, 1.43, 1.82,
+  1.00, 1.05, 1.18, 1.33, 1.67, 2.22
+];
+
+
+const getDelayMetadata = (bloque: BlockData) => {
+  const delayMatch = bloque.id.match(/-(d[1-4])$/);
+  const delayId = delayMatch?.[1] ?? 'd1';
+
+  const start_day = delayId === 'd3' || delayId === 'd4' ? 35 : 0;
+  const delay = delayId === 'd2' || delayId === 'd4' ? 63 : 35;
+
+  return { start_day, delay };
+};
+
+const ALL_BLOCKS = Object.values(STIMULI_GROUPS).flat();
+const STORAGE_KEY = 'experimento-asignacion';
+
+type StoredAssignmentState = {
+  participantId: string;
+  sessionNum: string;
+  assignmentId: string;
+  assignedSequence: string[];
+  assignedMagnitudes: number[];
+  screen: Screen;
+  currentBlockIndex: number;
+  responses: Record<string, Choice>;
+};
+
+const buildBlocksFromSequence = (sequence: string[]): BlockData[] => {
+  const mappedBlocks = sequence
+    .map(id => ALL_BLOCKS.find(block => block.id === id))
+    .filter((block): block is BlockData => Boolean(block));
+
+  if (mappedBlocks.length !== sequence.length) {
+    throw new Error('Asignación inválida: la secuencia de bloques recibida es incompleta o desconocida. Por favor, reinicia la sesión con el coordinador.');
+  }
+
+  return mappedBlocks;
+};
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('setup');
@@ -15,9 +60,16 @@ export default function App() {
   const [sessionNum, setSessionNum] = useState('001');
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, Choice>>({});
-  const [shuffledBlocks, setShuffledBlocks] = useState<BlockData[]>([]);
+  const [shuffledBlocks, setShuffledBlocks] = useState<BlockData[]>(ALL_BLOCKS);
+  const [assignmentId, setAssignmentId] = useState<string | null>(null);
+  const [assignedSequence, setAssignedSequence] = useState<string[]>([]);
+  const [assignedMagnitudes, setAssignedMagnitudes] = useState<number[]>([]);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [countdown, setCountdown] = useState(30);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Comprehension screen state
   const [comprehensionStep, setComprehensionStep] = useState(1);
@@ -43,15 +95,50 @@ export default function App() {
     return () => clearInterval(interval);
   }, [screen, countdown]);
 
-  // Randomize Amounts but keep Delays in order
+  // Restore assignment state from localStorage to avoid re-consulting doGet
   useEffect(() => {
-    const amountLabels = Object.keys(STIMULI_GROUPS);
-    const shuffledLabels = amountLabels.sort(() => Math.random() - 0.5);
-    
-    // Flatten the groups: for each shuffled amount, we take its 3 delays in order
-    const finalSequence = shuffledLabels.flatMap(label => STIMULI_GROUPS[label]);
-    setShuffledBlocks(finalSequence);
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return;
+
+      const parsed = JSON.parse(stored) as StoredAssignmentState;
+      if (!parsed?.assignmentId || !Array.isArray(parsed.assignedSequence) || parsed.assignedSequence.length === 0) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+
+      const orderedBlocks = buildBlocksFromSequence(parsed.assignedSequence);
+      setParticipantId(parsed.participantId ?? '');
+      setSessionNum(parsed.sessionNum ?? '001');
+      setAssignmentId(parsed.assignmentId);
+      setAssignedSequence(parsed.assignedSequence);
+      setAssignedMagnitudes(parsed.assignedMagnitudes ?? []);
+      setShuffledBlocks(orderedBlocks);
+      setScreen(parsed.screen ?? 'instructions');
+      setCurrentBlockIndex(parsed.currentBlockIndex ?? 0);
+      setResponses(parsed.responses ?? {});
+    } catch (error) {
+      console.warn('No se pudo restaurar la asignación guardada:', error);
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!assignmentId) return;
+
+    const data: StoredAssignmentState = {
+      participantId,
+      sessionNum,
+      assignmentId,
+      assignedSequence,
+      assignedMagnitudes,
+      screen,
+      currentBlockIndex,
+      responses,
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }, [assignmentId, participantId, sessionNum, assignedSequence, assignedMagnitudes, screen, currentBlockIndex, responses]);
 
   // Scroll to top when changing screens or active blocks
   useEffect(() => {
@@ -62,10 +149,34 @@ export default function App() {
 
   const [exampleResponses, setExampleResponses] = useState<Record<string, Choice>>({});
 
-  const handleStart = (e: React.FormEvent) => {
+  const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (participantId.trim()) {
+    if (!participantId.trim()) return;
+
+    setAssignmentLoading(true);
+    setAssignmentError(null);
+
+    try {
+      const assignment = await solicitarAsignacion();
+      if (assignment.result !== 'success') {
+        throw new Error(assignment.message || assignment.error || 'Error al solicitar asignación');
+      }
+
+      setAssignmentId(assignment.idInterno ?? null);
+      setAssignedSequence(assignment.secuencia ?? []);
+      setAssignedMagnitudes(assignment.ordenMagnitudes ?? []);
+
+      if (assignment.secuencia && assignment.secuencia.length > 0) {
+        const orderedBlocks = buildBlocksFromSequence(assignment.secuencia);
+        setShuffledBlocks(orderedBlocks);
+      }
+
       setScreen('instructions');
+    } catch (error) {
+      console.error('Error al obtener asignación:', error);
+      setAssignmentError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setAssignmentLoading(false);
     }
   };
 
@@ -86,23 +197,105 @@ export default function App() {
     return Object.keys(exampleResponses).length >= 2;
   }, [exampleResponses]);
 
-  const nextBlock = () => {
+  const nextBlock = async () => {
     if (!isBlockComplete) return;
 
     setIsTransitioning(true);
-    
+
     // Brief pause to show the checkmark/success state
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsTransitioning(false);
       const isEndOfAmountGroup = (currentBlockIndex + 1) % 4 === 0;
-      
+
       if (currentBlockIndex < shuffledBlocks.length - 1) {
         setCurrentBlockIndex(prev => prev + 1);
         if (isEndOfAmountGroup) {
           setScreen('feedback');
         }
       } else {
+        // ==========================================
+        // ¡LLEGAMOS AL FINAL DEL EXPERIMENTO (BLOQUE 12) !
+        // ==========================================
+        setIsSaving(true);
         setScreen('finished');
+
+        try {
+          let orderCounter = 1;
+          const ensayosFinales: FilaEnsayo[] = [];
+          const trialCountersByBudget = new Map<number, number>();
+          let rateRowIndex = 0;
+          let previousMagnitude: number | null = null;
+          let previousBudget: number | null = null;
+          let currentBudgetContrast = 0;
+
+          // Recorremos los bloques barajados (shuffledBlocks) para armar las 72 filas exactas
+          shuffledBlocks.forEach((bloque) => {
+            const budgetMatch = bloque.id.match(/block-(\d+)-/);
+            const budget = budgetMatch ? parseInt(budgetMatch[1], 10) : 2000;
+
+            let magnitude = 1;
+            if (budget === 200) magnitude = 0;
+            if (budget === 20000) magnitude = 2;
+
+            const { start_day, delay } = getDelayMetadata(bloque);
+            const isNewBudgetGroup = budget !== previousBudget;
+            if (isNewBudgetGroup) {
+              currentBudgetContrast = previousMagnitude === null ? 0 : magnitude - previousMagnitude;
+            }
+            const contrast = currentBudgetContrast;
+
+            bloque.rows.forEach((row) => {
+              const userChoice = responses[row.id];
+
+              const currentTrial = (trialCountersByBudget.get(budget) ?? 0) + 1;
+              trialCountersByBudget.set(budget, currentTrial);
+
+              let choiceIndex = 0;
+              let amount_now = 0;
+              let amount_later = 0;
+
+              if (userChoice) {
+                const foundIndex = row.choices.findIndex(
+                  c => c.today === userChoice.today && c.later === userChoice.later
+                );
+                if (foundIndex !== -1) choiceIndex = foundIndex + 1;
+                amount_now = userChoice.today;
+                amount_later = userChoice.later;
+              }
+
+              const rate = RATE_SEQUENCE_BY_TRIAL[rateRowIndex % RATE_SEQUENCE_BY_TRIAL.length];
+              rateRowIndex += 1;
+
+              ensayosFinales.push({
+                order: orderCounter++,
+                trial: currentTrial,
+                budget,
+                magnitude,
+                start_day,
+                delay,
+                rate,
+                contrast,
+                choice: choiceIndex,
+                amount_now,
+                amount_later
+              });
+            });
+
+            if (isNewBudgetGroup) {
+              previousMagnitude = magnitude;
+              previousBudget = budget;
+            }
+          });
+
+          // Enviamos el paquete masivo a Google Sheets
+          await enviarResultadosAGoogle(participantId, ensayosFinales, assignmentId ?? undefined);
+          localStorage.removeItem(STORAGE_KEY);
+          setIsSaving(false);
+        } catch (error) {
+          console.error('Error al guardar en Google Sheets:', error);
+          setIsSaving(false);
+          setSaveError(error instanceof Error ? error.message : String(error));
+        }
       }
     }, 800);
   };
@@ -127,24 +320,32 @@ export default function App() {
             value={participantId}
             onChange={(e) => setParticipantId(e.target.value)}
             className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-            placeholder="Ej: P001"
+            placeholder="Correo o nombre completo"
             required
           />
+          <p className="mt-2 text-xs text-slate-400">Usa tu correo electrónico o tu nombre completo para identificar la sesión.</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">Número de Sesión</label>
           <input 
             type="text" 
             value={sessionNum}
-            onChange={(e) => setSessionNum(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            readOnly
+            className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed"
           />
+          <p className="mt-2 text-xs text-slate-400">Este valor no puede modificarse.</p>
         </div>
+        {assignmentError && (
+          <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 text-rose-700 text-sm">
+            {assignmentError}
+          </div>
+        )}
         <button 
           type="submit"
-          className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          disabled={assignmentLoading}
+          className={`w-full py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${assignmentLoading ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
         >
-          Comenzar Experimento <ChevronRight className="w-4 h-4" />
+          {assignmentLoading ? 'Solicitando asignación...' : 'Comenzar Experimento'} <ChevronRight className="w-4 h-4" />
         </button>
       </form>
     </motion.div>
@@ -919,15 +1120,33 @@ export default function App() {
   };
 
   const renderFinished = () => (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="max-w-2xl mx-auto mt-32 p-12 bg-white rounded-3xl shadow-sm border border-slate-100 text-center"
     >
       <h2 className="text-4xl font-serif italic text-slate-900 mb-6">Experimento Finalizado</h2>
+
+      {isSaving ? (
+        <div className="py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg font-medium text-slate-700">Guardando tus resultados en la base de datos...</p>
+        </div>
+      ) : saveError ? (
+        <div className="py-4 bg-rose-50 text-rose-800 rounded-2xl mb-8">
+          <p className="font-bold">Hubo un problema al sincronizar con la nube.</p>
+          <p className="text-sm mt-1">Tus datos están seguros localmente, pero avisa al administrador.</p>
+        </div>
+      ) : (
+        <div className="py-4 bg-emerald-50 text-emerald-800 rounded-2xl mb-8">
+          <p className="font-bold">¡Resultados guardados exitosamente en Google Sheets!</p>
+        </div>
+      )}
+
       <p className="text-lg text-slate-600 mb-10">
         Gracias por haber participado. Si tienes alguna duda o comentario, comunícate a moisesth55555@gmail.com.
       </p>
+
       <div className="bg-slate-50 p-6 rounded-2xl text-left mb-10">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Resumen de Datos</h3>
         <div className="space-y-2 font-mono text-sm">
@@ -936,12 +1155,6 @@ export default function App() {
           <p><span className="text-slate-400">Respuestas:</span> {Object.keys(responses).length} decisiones tomadas</p>
         </div>
       </div>
-      <button 
-        onClick={() => window.location.reload()}
-        className="px-8 py-4 border-2 border-slate-200 text-slate-600 rounded-full font-medium hover:bg-slate-50 transition-all"
-      >
-        Reiniciar Aplicación
-      </button>
     </motion.div>
   );
 
