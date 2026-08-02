@@ -27,11 +27,16 @@ const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
 
 export async function solicitarAsignacion(): Promise<AssignmentResponse> {
   const response = await fetch(GOOGLE_SCRIPT_URL, {
-    method: 'GET',
+    method: 'POST',
+    // Usamos 'text/plain' o sin headers restrictivos para evitar preflight de CORS en POST
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8',
+    },
+    body: JSON.stringify({ accion: 'solicitarAsignacion' })
   });
 
   if (!response.ok) {
-    throw new Error(`Error al solicitar asignaci�n: ${response.status} ${response.statusText}`);
+    throw new Error(`Error al solicitar asignación: ${response.status}`);
   }
 
   return response.json();
