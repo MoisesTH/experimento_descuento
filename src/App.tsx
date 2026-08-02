@@ -280,7 +280,9 @@ export default function App() {
                 const foundIndex = row.choices.findIndex(
                   c => c.today === userChoice.today && c.later === userChoice.later
                 );
-                if (foundIndex !== -1) choiceIndex = foundIndex + 1;
+                if (foundIndex !== -1) {choiceIndex = foundIndex + 1;
+                }
+                
                 amount_now = userChoice.today;
                 amount_later = userChoice.later;
                 tiempo_respuesta_ms = userChoice.tiempo_respuesta_ms ?? 0;
