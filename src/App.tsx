@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, Info, Banknote, Clock, CheckCircle2, User, Calendar, Coins, Coffee } from 'lucide-react';
+import { ChevronRight, Info, Banknote, CheckCircle2, User, Calendar, Coffee } from 'lucide-react';
 import { Screen, BlockData, Choice } from './types';
 import { STIMULI_GROUPS } from './constants';
 import { enviarResultadosAGoogle, solicitarAsignacion, FilaEnsayo } from './services/googleSheets';
