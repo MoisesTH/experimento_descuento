@@ -12,6 +12,7 @@ export interface FilaEnsayo {
   choice: number;      // 1 al 6 (Opción A a F)
   amount_now: number;  // Valor 'today' elegido
   amount_later: number;// Valor 'later' elegido
+  tiempo_respuesta_ms?: number; // Tiempo de respuesta en milisegundos
 }
 
 export interface AssignmentResponse {
@@ -24,7 +25,7 @@ export interface AssignmentResponse {
 }
 
 // Usamos tu variable de entorno (recuerda configurarla en GitHub o en tu .env local)
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwM_c3h80EgFaez0yAkP6IyQSEuV-RO9hFlfnIbi-Xpq6g2pgzLDTtNl_WhJSFf4wKx/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWobBcN8PFA4Wdpm0SurqZB2LO9AFQBPE-MPYB0_zIrTheKrvFW2aerv9PVsRXK0n0/exec";
 
 // ==========================================
 // 1. SOLICITAR ASIGNACIÓN (POST)
@@ -67,7 +68,8 @@ export async function enviarResultadosAGoogle(usuarioId: string, ensayos: FilaEn
     CONTRAST: e.contrast,
     CHOICE: e.choice,
     AMOUNT_NOW: e.amount_now,
-    AMOUNT_LATER: e.amount_later
+    AMOUNT_LATER: e.amount_later,
+    TIEMPO_RESPUESTA_MS: e.tiempo_respuesta_ms ?? 0
   }));
 
   const payload: Record<string, unknown> = {

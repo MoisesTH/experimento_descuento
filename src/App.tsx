@@ -31,6 +31,10 @@ const getDelayMetadata = (bloque: BlockData) => {
 const ALL_BLOCKS = Object.values(STIMULI_GROUPS).flat();
 const STORAGE_KEY = 'experimento-asignacion';
 
+type ResponseWithTime = Choice & {
+  tiempo_respuesta_ms?: number;
+};
+
 type StoredAssignmentState = {
   participantId: string;
   sessionNum: string;
@@ -39,7 +43,7 @@ type StoredAssignmentState = {
   assignedMagnitudes: number[];
   screen: Screen;
   currentBlockIndex: number;
-  responses: Record<string, Choice>;
+  responses: Record<string, ResponseWithTime>;
 };
 
 const buildBlocksFromSequence = (sequence: string[]): BlockData[] => {
@@ -59,7 +63,7 @@ export default function App() {
   const [participantId, setParticipantId] = useState('');
   const [sessionNum, setSessionNum] = useState('001');
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
-  const [responses, setResponses] = useState<Record<string, Choice>>({});
+  const [responses, setResponses] = useState<Record<string, ResponseWithTime>>({});
   const [shuffledBlocks, setShuffledBlocks] = useState<BlockData[]>(ALL_BLOCKS);
   const [assignmentId, setAssignmentId] = useState<string | null>(null);
   const [assignedSequence, setAssignedSequence] = useState<string[]>([]);
@@ -70,6 +74,7 @@ export default function App() {
   const [countdown, setCountdown] = useState(30);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [tiempoInicioBloque, setTiempoInicioBloque] = useState<number>(Date.now());
 
   // Comprehension screen state
   const [comprehensionStep, setComprehensionStep] = useState(1);
@@ -94,6 +99,13 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, [screen, countdown]);
+
+  useEffect(() => {
+    if (screen === 'task') {
+      setTiempoInicioBloque(Date.now());
+    }
+  }, [screen, currentBlockIndex]);
+
 
   // Restore assignment state from localStorage to avoid re-consulting doGet
   useEffect(() => {
@@ -181,7 +193,16 @@ export default function App() {
   };
 
   const handleSelect = (rowId: string, choice: Choice) => {
-    setResponses(prev => ({ ...prev, [rowId]: choice }));
+    const tiempoActual = Date.now();
+    const tiempoTranscurrido = tiempoActual - tiempoInicioBloque;
+
+    setResponses(prev => ({
+      ...prev,
+      [rowId]: {
+        ...choice,
+        tiempo_respuesta_ms: tiempoTranscurrido,
+      },
+    }));
   };
 
   const handleExampleSelect = (rowId: string, choice: Choice) => {
@@ -253,6 +274,7 @@ export default function App() {
               let choiceIndex = 0;
               let amount_now = 0;
               let amount_later = 0;
+              let tiempo_respuesta_ms = 0;
 
               if (userChoice) {
                 const foundIndex = row.choices.findIndex(
@@ -261,6 +283,7 @@ export default function App() {
                 if (foundIndex !== -1) choiceIndex = foundIndex + 1;
                 amount_now = userChoice.today;
                 amount_later = userChoice.later;
+                tiempo_respuesta_ms = userChoice.tiempo_respuesta_ms ?? 0;
               }
 
               const rate = RATE_SEQUENCE_BY_TRIAL[rateRowIndex % RATE_SEQUENCE_BY_TRIAL.length];
@@ -277,7 +300,8 @@ export default function App() {
                 contrast,
                 choice: choiceIndex,
                 amount_now,
-                amount_later
+                amount_later,
+                tiempo_respuesta_ms
               });
             });
 
