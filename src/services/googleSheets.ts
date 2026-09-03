@@ -1,5 +1,3 @@
-// src/services/googleSheets.ts
-
 export interface FilaEnsayo {
   order: number;       // 1 al 72
   trial: number;       // Bloque de 24
@@ -13,6 +11,9 @@ export interface FilaEnsayo {
   amount_now: number;  // Valor 'today' elegido
   amount_later: number;// Valor 'later' elegido
   tiempo_respuesta_ms?: number; // Tiempo de respuesta en milisegundos
+  edad?: string | number;
+  genero?: string;
+  sesion?: string;
 }
 
 export interface AssignmentResponse {
@@ -24,7 +25,6 @@ export interface AssignmentResponse {
   error?: string;
 }
 
-// Usamos tu variable de entorno (recuerda configurarla en GitHub o en tu .env local)
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzPeov30iXtesZPUa4bS0scbEzRwFW98jdEED14hAcYAOu4J7SoiFa9KuDtNh4D_-ji/exec";
 
 // ==========================================
@@ -55,7 +55,12 @@ export async function solicitarAsignacion(): Promise<AssignmentResponse> {
 // ==========================================
 // 2. ENVIAR RESULTADOS (POST)
 // ==========================================
-export async function enviarResultadosAGoogle(usuarioId: string, ensayos: FilaEnsayo[], idInterno?: string) {
+export async function enviarResultadosAGoogle(
+  usuarioId: string, 
+  ensayos: FilaEnsayo[], 
+  idInterno?: string,
+  demograficos?: { edad?: string; genero?: string; sesion?: string }
+) {
   // Mapeamos al formato en mayúsculas que espera tu backend en Google Apps Script
   const ensayosMayus = ensayos.map(e => ({
     ORDER: e.order,
@@ -69,12 +74,21 @@ export async function enviarResultadosAGoogle(usuarioId: string, ensayos: FilaEn
     CHOICE: e.choice,
     AMOUNT_NOW: e.amount_now,
     AMOUNT_LATER: e.amount_later,
-    TIEMPO_RESPUESTA_MS: e.tiempo_respuesta_ms ?? 0
+    TIEMPO_RESPUESTA_MS: e.tiempo_respuesta_ms ?? 0,
+    EDAD: demograficos?.edad ?? e.edad ?? '',
+    GENERO: demograficos?.genero ?? e.genero ?? '',
+    SESION: demograficos?.sesion ?? e.sesion ?? ''
   }));
 
   const payload: Record<string, unknown> = {
     usuarioManual: usuarioId,
     USUARIO_MANUAL: usuarioId,
+    EDAD: demograficos?.edad ?? '',
+    GENERO: demograficos?.genero ?? '',
+    SESION: demograficos?.sesion ?? '',
+    edad: demograficos?.edad ?? '',
+    genero: demograficos?.genero ?? '',
+    sesion: demograficos?.sesion ?? '',
     ENSAYOS: ensayosMayus
   };
 
@@ -95,10 +109,6 @@ export async function enviarResultadosAGoogle(usuarioId: string, ensayos: FilaEn
     if (!response.ok) {
       throw new Error(`Error al enviar resultados: ${response.status} ${response.statusText}`);
     }
-
-    // Opcional: si tu script de envío también devuelve JSON y quieres leerlo
-    // const result = await response.json();
-    // return result;
 
     return true;
   } catch (error) {
