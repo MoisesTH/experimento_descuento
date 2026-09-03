@@ -25,7 +25,7 @@ export interface AssignmentResponse {
   error?: string;
 }
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzPeov30iXtesZPUa4bS0scbEzRwFW98jdEED14hAcYAOu4J7SoiFa9KuDtNh4D_-ji/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrl_0HxslA3Lv_EyraIzIFmkem8o1Q07XvoRCQ9d5BPV-biKxttInSUfy-I_1rtEU/exec";
 
 // ==========================================
 // 1. SOLICITAR ASIGNACIÓN (POST)
