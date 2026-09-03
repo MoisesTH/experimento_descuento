@@ -38,6 +38,9 @@ const DELAY_PLANS = [
   { text1: 'En 5 semanas', text2: 'En 14 semanas', id: 'd4', plan: PLAN_D_BASE }
 ];
 
+// Modificable desde GitHub según la fase del estudio (ej. '001', '002', 'post')
+export const SESSION_NUMBER = '001';
+
 export const STIMULI_GROUPS: Record<string, BlockData[]> = AMOUNTS.reduce((acc, amt) => {
   acc[amt.label] = DELAY_PLANS.map(delay => ({
     id: `block-${amt.value}-${delay.id}`,
@@ -50,4 +53,3 @@ export const STIMULI_GROUPS: Record<string, BlockData[]> = AMOUNTS.reduce((acc, 
   }));
   return acc;
 }, {} as Record<string, BlockData[]>);
-
