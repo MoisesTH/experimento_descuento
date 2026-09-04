@@ -67,7 +67,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
                 Facultad de Psicología
               </h2>
               <h3 className="text-xs md:text-sm font-sans font-semibold text-slate-500 mt-0.5">
-                Laboratorio de Comportamiento y Adaptación
+                Laboratorio 25 Comportamiento Adaptable
               </h3>
             </div>
 
