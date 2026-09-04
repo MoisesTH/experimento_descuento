@@ -230,7 +230,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
           {/* Firma institucional */}
           <div className="pt-6 border-t border-slate-200">
             <p className="text-slate-600 text-xs italic mb-4">
-              El Laboratorio de Comportamiento y Adaptación de la Facultad de Psicología agradece tu tiempo y participación.
+              El Laboratorio 25 Comportamiento Adaptable de la Facultad de Psicología agradece tu tiempo y participación.
             </p>
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 inline-block">
               <p className="font-bold text-slate-900">Moisés Torres Hernández</p>
