@@ -10,6 +10,27 @@ import { Screen, BlockData, Choice } from './types';
 import { STIMULI_GROUPS, SESSION_NUMBER } from './constants';
 import { enviarResultadosAGoogle, solicitarAsignacion, FilaEnsayo } from './services/googleSheets';
 
+// Detección silenciosa del dispositivo del participante
+const detectarDispositivo = (): string => {
+  if (typeof window === 'undefined') return 'Desconocido';
+  const ua = navigator.userAgent || '';
+  const ancho = window.innerWidth || window.screen.width;
+  const alto = window.innerHeight || window.screen.height;
+  const esTactil = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  const esMovilRegex = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const esTabletRegex = /iPad|Tablet|PlayBook/i.test(ua) || (esTactil && ancho >= 768 && ancho <= 1024);
+
+  let tipo = 'Desktop';
+  if (esMovilRegex && ancho < 768) {
+    tipo = 'Mobile';
+  } else if (esTabletRegex || (esTactil && ancho <= 1024)) {
+    tipo = 'Tablet';
+  }
+
+  return `${tipo} (${ancho}x${alto})`;
+};
+
 const RATE_SEQUENCE_BY_TRIAL = [
   1.05, 1.11, 1.18, 1.25, 1.43, 1.82,
   1.00, 1.05, 1.18, 1.33, 1.67, 2.22,
@@ -80,7 +101,7 @@ export default function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [tiempoInicioBloque, setTiempoInicioBloque] = useState<number>(Date.now());
-  const [savedEnsayos, setSavedEnsayos] = useState<FilaEnsayo[]>([]);
+  const [, setSavedEnsayos] = useState<FilaEnsayo[]>([]);
 
   // Comprehension screen state
   const [comprehensionStep, setComprehensionStep] = useState(1);
@@ -95,14 +116,12 @@ export default function App() {
     return gender;
   }, [gender, genderCustom]);
 
-  // Handle countdown resetting when entering the feedback screen
   useEffect(() => {
     if (screen === 'feedback') {
       setCountdown(30);
     }
   }, [screen]);
 
-  // Handle active countdown logic
   useEffect(() => {
     if (screen !== 'feedback' || countdown <= 0) return;
 
@@ -119,7 +138,6 @@ export default function App() {
     }
   }, [screen, currentBlockIndex]);
 
-  // Restore assignment state from localStorage to avoid re-consulting doGet
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -169,13 +187,11 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [assignmentId, participantId, sessionNum, age, gender, genderCustom, assignedSequence, assignedMagnitudes, screen, currentBlockIndex, responses]);
 
-  // Scroll to top when changing screens or active blocks
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [screen, currentBlockIndex]);
 
   const currentBlock = shuffledBlocks[currentBlockIndex];
-
   const [exampleResponses, setExampleResponses] = useState<Record<string, Choice>>({});
 
   const handleStart = async (e: React.FormEvent) => {
@@ -241,7 +257,6 @@ export default function App() {
 
     setIsTransitioning(true);
 
-    // Brief pause to show the checkmark/success state
     setTimeout(async () => {
       setIsTransitioning(false);
       const isEndOfAmountGroup = (currentBlockIndex + 1) % 4 === 0;
@@ -252,13 +267,12 @@ export default function App() {
           setScreen('feedback');
         }
       } else {
-        // ==========================================
-        // ¡LLEGAMOS AL FINAL DEL EXPERIMENTO (BLOQUE 12) !
-        // ==========================================
+        // Fin del experimento
         setIsSaving(true);
         setScreen('finished');
 
         try {
+          const dispositivoDetectado = detectarDispositivo();
           let orderCounter = 1;
           const ensayosFinales: FilaEnsayo[] = [];
           const trialCountersByBudget = new Map<number, number>();
@@ -267,7 +281,6 @@ export default function App() {
           let previousBudget: number | null = null;
           let currentBudgetContrast = 0;
 
-          // Recorremos los bloques para armar las 72 filas exactas
           shuffledBlocks.forEach((bloque) => {
             const budgetMatch = bloque.id.match(/block-(\d+)-/);
             const budget = budgetMatch ? parseInt(budgetMatch[1], 10) : 2000;
@@ -325,7 +338,8 @@ export default function App() {
                 tiempo_respuesta_ms,
                 edad: age,
                 genero: effectiveGender,
-                sesion: sessionNum
+                sesion: sessionNum,
+                dispositivo: dispositivoDetectado
               });
             });
 
@@ -337,12 +351,17 @@ export default function App() {
 
           setSavedEnsayos(ensayosFinales);
 
-          // Enviamos el paquete a Google Sheets incluyendo edad, género y sesión
+          // Enviamos a Google Sheets incluyendo edad, género, sesión y dispositivo
           await enviarResultadosAGoogle(
             participantId, 
             ensayosFinales, 
             assignmentId ?? undefined,
-            { edad: age, genero: effectiveGender, sesion: sessionNum }
+            { 
+              edad: age, 
+              genero: effectiveGender, 
+              sesion: sessionNum,
+              dispositivo: dispositivoDetectado 
+            }
           );
           localStorage.removeItem(STORAGE_KEY);
           setIsSaving(false);
@@ -405,7 +424,7 @@ export default function App() {
               value={sessionNum}
               readOnly
               className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 cursor-not-allowed outline-none font-medium"
-              title="Fijado por protocolo (modificable en GitHub)"
+              title="Fijado por protocolo"
             />
           </div>
         </div>
@@ -561,7 +580,6 @@ export default function App() {
       </div>
 
       <div className="space-y-12 bg-slate-50 p-4 md:p-8 rounded-2xl md:rounded-3xl border border-slate-200 mb-10">
-        {/* Example Row 1 */}
         <div className="relative">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-bold">1</div>
@@ -607,7 +625,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Example Row 2 */}
         <div className="relative">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-bold">2</div>
@@ -755,7 +772,6 @@ export default function App() {
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 to-emerald-500"></div>
           
           <div className="p-6 md:p-12">
-            {/* Header and Progress */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-slate-100 pb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
@@ -771,7 +787,6 @@ export default function App() {
               </span>
             </div>
 
-            {/* Explanation / Context */}
             <div className="space-y-4 text-slate-600 text-sm md:text-base mb-8">
               <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/30 text-slate-700">
                 <p className="font-medium">
@@ -783,14 +798,12 @@ export default function App() {
               </p>
             </div>
 
-            {/* Stimulus Example Card Frame */}
             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200/60 mb-8 max-w-sm mx-auto flex flex-col items-center">
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-4 text-center">Escenario de Ejemplo (Bono total a distribuir: $4,600)</span>
               
               <div className="bg-white border-2 border-blue-500 rounded-2xl p-6 w-full text-center shadow-sm relative overflow-hidden">
                 <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest block mb-4">Opción de Pago Distribuido</span>
                 <div className="space-y-4">
-                  {/* Top part: Pago de arriba */}
                   <div className="flex flex-col items-center">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Pago de arriba</div>
                     <div className="text-2xl font-bold text-slate-900 flex items-center gap-1.5 justify-center">
@@ -802,7 +815,6 @@ export default function App() {
                   
                   <div className="h-px w-16 bg-slate-200 mx-auto"></div>
                   
-                  {/* Bottom part: Pago de abajo */}
                   <div className="flex flex-col items-center">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Pago de abajo</div>
                     <div className="text-2xl font-bold text-slate-900 flex items-center gap-1.5 justify-center">
@@ -815,12 +827,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* Question Text */}
             <div className="mb-6">
               <h3 className="text-lg font-bold text-slate-800 leading-snug">{currentQ.text}</h3>
             </div>
 
-            {/* Options Selector */}
             <div className="space-y-3 mb-8">
               {currentQ.options.map((opt) => {
                 const isSelected = compAnswer === opt.key;
@@ -847,7 +857,6 @@ export default function App() {
               })}
             </div>
 
-            {/* Feedback Screen Message */}
             <AnimatePresence mode="wait">
               {compShowResult && !isConfirmationStep && (
                 <motion.div
@@ -884,7 +893,6 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* Action Buttons */}
             <div>
               {isConfirmationStep ? (
                 <button
