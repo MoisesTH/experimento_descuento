@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ShieldCheck, Monitor, AlertTriangle, ChevronRight, XCircle, Copy, Check } from 'lucide-react';
 
+// Importación directa para que Vite resuelva la ruta en cualquier servidor o GitHub Pages
+import logoUnam from '../assets/logo-unam.png';
+import logoPsicologia from '../assets/logo-psicologia.png';
+
 interface ConsentScreenProps {
   folio: string;
   onAccept: () => void;
@@ -48,9 +52,9 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             {/* ESCUDO UNAM (Izquierda) */}
             <div className="flex-shrink-0 flex items-center justify-center">
               <img
-                src="/logo-unam.png"
-                alt="Escudo Universidad Nacional Autónoma de México"
-                className="h-24 md:h-28 w-auto object-contain"
+                src={logoUnam}
+                alt="Escudo UNAM"
+                className="h-24 md:h-28 w-auto object-contain max-w-[130px]"
               />
             </div>
 
@@ -70,9 +74,9 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             {/* LOGO FACULTAD DE PSICOLOGÍA (Derecha) */}
             <div className="flex-shrink-0 flex items-center justify-center">
               <img
-                src="/logo-psicologia.png"
+                src={logoPsicologia}
                 alt="Logotipo Facultad de Psicología UNAM"
-                className="h-24 md:h-28 w-auto object-contain"
+                className="h-24 md:h-28 w-auto object-contain max-w-[130px]"
               />
             </div>
 
@@ -81,7 +85,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
           {/* Folio Digital Asignado */}
           <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-500 uppercase tracking-wider">Folio:</span>
+              <span className="font-semibold text-slate-500 uppercase tracking-wider">Folio institucional:</span>
               <code className="font-mono bg-white border border-slate-300 px-2.5 py-1 rounded text-slate-800 font-semibold select-all">
                 {folio}
               </code>
