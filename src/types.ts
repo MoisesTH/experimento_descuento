@@ -15,4 +15,4 @@ export interface BlockData {
   rows: RowData[];
 }
 
-export type Screen = 'setup' | 'instructions' | 'example' | 'comprehension' | 'ready' | 'task' | 'feedback' | 'finished';
+export type Screen = 'consent' | 'setup' | 'instructions' | 'example' | 'comprehension' | 'ready' | 'task' | 'feedback' | 'finished';
