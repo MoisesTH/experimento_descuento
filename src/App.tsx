@@ -9,6 +9,15 @@ import { ChevronRight, Info, Banknote, Calendar, CheckCircle2, User, Coffee } fr
 import { Screen, BlockData, Choice } from './types';
 import { STIMULI_GROUPS, SESSION_NUMBER } from './constants';
 import { enviarResultadosAGoogle, solicitarAsignacion, FilaEnsayo } from './services/googleSheets';
+import { ConsentScreen } from './components/ConsentScreen';
+import { DeclinedScreen } from './components/DeclinedScreen';
+
+const generateUniqueId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'fol-' + Math.random().toString(36).substring(2, 10) + '-' + Date.now().toString(36);
+};
 
 // Detección silenciosa del dispositivo del participante
 const detectarDispositivo = (): string => {
@@ -82,7 +91,7 @@ const buildBlocksFromSequence = (sequence: string[]): BlockData[] => {
 };
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('setup');
+  const [screen, setScreen] = useState<Screen>('consent');
   const [participantId, setParticipantId] = useState('');
   const [sessionNum] = useState(SESSION_NUMBER);
   const [age, setAge] = useState('');
@@ -91,7 +100,18 @@ export default function App() {
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, ResponseWithTime>>({});
   const [shuffledBlocks, setShuffledBlocks] = useState<BlockData[]>(ALL_BLOCKS);
-  const [assignmentId, setAssignmentId] = useState<string | null>(null);
+  const [assignmentId, setAssignmentId] = useState<string>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as StoredAssignmentState;
+        if (parsed?.assignmentId) return parsed.assignmentId;
+      }
+    } catch {
+      // fallback
+    }
+    return generateUniqueId();
+  });
   const [assignedSequence, setAssignedSequence] = useState<string[]>([]);
   const [assignedMagnitudes, setAssignedMagnitudes] = useState<number[]>([]);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
@@ -171,7 +191,7 @@ export default function App() {
       setAssignedSequence(parsed.assignedSequence);
       setAssignedMagnitudes(parsed.assignedMagnitudes ?? []);
       setShuffledBlocks(orderedBlocks);
-      setScreen(parsed.screen ?? 'instructions');
+      setScreen(parsed.screen ?? 'consent');
       setCurrentBlockIndex(parsed.currentBlockIndex ?? 0);
       setResponses(parsed.responses ?? {});
     } catch (error) {
@@ -217,12 +237,14 @@ export default function App() {
     setAssignmentError(null);
 
     try {
-      const assignment = await solicitarAsignacion();
+      const assignment = await solicitarAsignacion(assignmentId);
       if (assignment.result !== 'success') {
         throw new Error(assignment.message || assignment.error || 'Error al solicitar asignación');
       }
 
-      setAssignmentId(assignment.idInterno ?? null);
+      if (assignment.idInterno) {
+        setAssignmentId(assignment.idInterno);
+      }
       setAssignedSequence(assignment.secuencia ?? []);
       setAssignedMagnitudes(assignment.ordenMagnitudes ?? []);
 
@@ -397,11 +419,25 @@ export default function App() {
         <div className="p-3 bg-blue-50 rounded-lg">
           <User className="w-6 h-6 text-blue-600" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-slate-800">Nueva Sesión</h1>
           <p className="text-xs text-slate-400">Registro sociodemográfico</p>
         </div>
       </div>
+
+      {/* Folio institucional asignado */}
+      <div className="mb-5 p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl text-xs">
+        <div className="flex items-center justify-between text-slate-500 mb-1.5">
+          <span className="font-bold uppercase tracking-wider text-[10px] text-slate-600">Folio institucional:</span>
+          <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            <CheckCircle2 className="w-3 h-3" /> Consentimiento firmado
+          </span>
+        </div>
+        <code className="font-mono text-slate-900 font-bold text-xs select-all block break-all bg-white px-2 py-1 rounded border border-slate-200">
+          {assignmentId}
+        </code>
+      </div>
+
       <form onSubmit={handleStart} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">ID del Participante</label>
@@ -1314,6 +1350,16 @@ export default function App() {
 
       <main className="py-10">
         <AnimatePresence mode="wait">
+          {screen === 'consent' && (
+            <ConsentScreen
+              folio={assignmentId}
+              onAccept={() => setScreen('setup')}
+              onDecline={() => setScreen('declined')}
+            />
+          )}
+          {screen === 'declined' && (
+            <DeclinedScreen onReturnToConsent={() => setScreen('consent')} />
+          )}
           {screen === 'setup' && renderSetup()}
           {screen === 'instructions' && renderInstructions()}
           {screen === 'example' && renderExample()}
