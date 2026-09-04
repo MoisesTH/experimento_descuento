@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { UnamLogo, PsicoUnamLogo } from './InstitutionalLogos';
+
+// Importamos las mismas imágenes oficiales desde assets
+import logoUnam from '../assets/logo-unam.png';
+import logoPsicologia from '../assets/logo-psicologia.png';
 
 interface DeclinedScreenProps {
   onReturnToConsent: () => void;
@@ -16,10 +19,20 @@ export function DeclinedScreen({ onReturnToConsent }: DeclinedScreenProps) {
       className="max-w-xl mx-auto px-4 py-12"
     >
       <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg border border-slate-200 p-8 md:p-10 text-center">
-        <div className="flex items-center justify-center gap-6 mb-6 opacity-75">
-          <UnamLogo className="w-12 h-14" />
-          <div className="h-8 w-px bg-slate-200" />
-          <PsicoUnamLogo className="w-12 h-14" />
+        
+        {/* Logos institucionales oficiales */}
+        <div className="flex items-center justify-center gap-6 mb-6">
+          <img
+            src={logoUnam}
+            alt="Escudo UNAM"
+            className="h-16 md:h-20 w-auto object-contain max-w-[100px]"
+          />
+          <div className="h-10 w-px bg-slate-200" />
+          <img
+            src={logoPsicologia}
+            alt="Logotipo Facultad de Psicología UNAM"
+            className="h-16 md:h-20 w-auto object-contain max-w-[100px]"
+          />
         </div>
 
         <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-5 text-slate-600">
@@ -45,7 +58,7 @@ export function DeclinedScreen({ onReturnToConsent }: DeclinedScreenProps) {
           <button
             type="button"
             onClick={onReturnToConsent}
-            className="inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+            className="inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" /> Si cambiaste de opinión, volver al consentimiento
           </button>
