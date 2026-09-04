@@ -85,7 +85,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
           {/* Folio Digital Asignado */}
           <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-500 uppercase tracking-wider">Folio institucional:</span>
+              <span className="font-semibold text-slate-500 uppercase tracking-wider">Folio:</span>
               <code className="font-mono bg-white border border-slate-300 px-2.5 py-1 rounded text-slate-800 font-semibold select-all">
                 {folio}
               </code>
@@ -109,7 +109,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
               Consentimiento Informado para Participantes
             </h2>
             <p className="text-xs md:text-sm text-slate-500 mt-1">
-              Título del estudio: <strong className="text-slate-700">Descuento temporal y efecto de magnitud en presupuestos temporales convexos</strong>
+              Título del estudio: <strong className="text-slate-700">Cuestiones Metodológicas en el Descuento Temporal</strong>
             </p>
           </div>
 
