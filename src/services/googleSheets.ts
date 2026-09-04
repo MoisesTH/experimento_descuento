@@ -14,6 +14,7 @@ export interface FilaEnsayo {
   edad?: string | number;
   genero?: string;
   sesion?: string;
+  dispositivo?: string;
 }
 
 export interface AssignmentResponse {
@@ -59,7 +60,7 @@ export async function enviarResultadosAGoogle(
   usuarioId: string, 
   ensayos: FilaEnsayo[], 
   idInterno?: string,
-  demograficos?: { edad?: string; genero?: string; sesion?: string }
+  demograficos?: { edad?: string; genero?: string; sesion?: string; dispositivo?: string }
 ) {
   // Mapeamos al formato en mayúsculas que espera tu backend en Google Apps Script
   const ensayosMayus = ensayos.map(e => ({
@@ -86,9 +87,11 @@ export async function enviarResultadosAGoogle(
     EDAD: demograficos?.edad ?? '',
     GENERO: demograficos?.genero ?? '',
     SESION: demograficos?.sesion ?? '',
+    DISPOSITIVO: demográficos?.dispositivo ?? '',
     edad: demograficos?.edad ?? '',
     genero: demograficos?.genero ?? '',
     sesion: demograficos?.sesion ?? '',
+    dispositivo: demograficos?.dispositivo ?? '',
     ENSAYOS: ensayosMayus
   };
 
