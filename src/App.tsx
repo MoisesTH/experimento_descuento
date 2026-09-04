@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, Info, Banknote, Calendar, CheckCircle2, User, Coffee, Download } from 'lucide-react';
+import { ChevronRight, Info, Banknote, Calendar, CheckCircle2, User, Coffee } from 'lucide-react';
 import { Screen, BlockData, Choice } from './types';
 import { STIMULI_GROUPS, SESSION_NUMBER } from './constants';
 import { enviarResultadosAGoogle, solicitarAsignacion, FilaEnsayo } from './services/googleSheets';
@@ -353,50 +353,6 @@ export default function App() {
         }
       }
     }, 800);
-  };
-
-  const handleDownloadCSV = () => {
-    if (savedEnsayos.length === 0) return;
-
-    const headers = [
-      'order', 'trial', 'budget', 'magnitude', 'start_day', 'delay',
-      'rate', 'contrast', 'choice', 'amount_now', 'amount_later',
-      'tiempo_respuesta_ms', 'id_participante', 'edad', 'genero', 'sesion'
-    ];
-
-    const escapeCsv = (val: unknown) => `"${String(val ?? '').replace(/"/g, '""')}"`;
-
-    const csvRows = [
-      headers.join(','),
-      ...savedEnsayos.map(e => [
-        e.order,
-        e.trial,
-        e.budget,
-        e.magnitude,
-        e.start_day,
-        e.delay,
-        e.rate,
-        e.contrast,
-        e.choice,
-        e.amount_now,
-        e.amount_later,
-        e.tiempo_respuesta_ms ?? 0,
-        escapeCsv(participantId),
-        escapeCsv(age),
-        escapeCsv(effectiveGender),
-        escapeCsv(sessionNum)
-      ].join(','))
-    ];
-
-    const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `datos_${participantId}_sesion_${sessionNum}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   const renderSetup = () => (
@@ -994,7 +950,6 @@ export default function App() {
       className="max-w-4xl mx-auto mt-6 md:mt-10 px-4"
     >
       <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden relative">
-        {/* Decorative background elements */}
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 via-emerald-500 to-blue-600"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-50 rounded-full blur-[100px] opacity-60"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-50 rounded-full blur-[100px] opacity-60"></div>
@@ -1288,7 +1243,7 @@ export default function App() {
       ) : saveError ? (
         <div className="py-4 bg-rose-50 text-rose-800 rounded-2xl mb-8">
           <p className="font-bold">Hubo un problema al sincronizar con la nube.</p>
-          <p className="text-sm mt-1">Tus datos están guardados localmente. Puedes descargarlos abajo.</p>
+          <p className="text-sm mt-1">Por favor avisa al coordinador o investigador del estudio.</p>
         </div>
       ) : (
         <div className="py-4 bg-emerald-50 text-emerald-800 rounded-2xl mb-8">
@@ -1311,14 +1266,9 @@ export default function App() {
         </div>
       </div>
 
-      {savedEnsayos.length > 0 && (
-        <button
-          onClick={handleDownloadCSV}
-          className="px-8 py-3 bg-slate-900 text-white rounded-full font-bold text-sm hover:bg-slate-800 transition-all shadow-md flex items-center justify-center gap-2 mx-auto"
-        >
-          <Download className="w-4 h-4" /> Descargar Copia CSV de Respaldo
-        </button>
-      )}
+      <p className="text-xs text-slate-400 font-medium">
+        Ya puedes cerrar esta ventana con total tranquilidad.
+      </p>
     </motion.div>
   );
 
