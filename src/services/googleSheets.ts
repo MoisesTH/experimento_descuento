@@ -4,7 +4,7 @@
  */
 
 // URL del despliegue Web de Google Apps Script
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqhZjrkpw4JLi5hz6eTVV63HqMUo4L-kvAFMrf5XXyp6vv8DxiTU8RMkU__siyih2T/exec"; // <-- Asegúrate de que sea tu URL activa
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyALes_XDBf7wXmTNqg4mK9S7h3Q3LSe7IjxOEuJ8OW2Es_ualauo7lv8PpLQ60pXsR/exec"; // <-- Asegúrate de que sea tu URL activa
 
 export interface FilaEnsayo {
   order: number;
