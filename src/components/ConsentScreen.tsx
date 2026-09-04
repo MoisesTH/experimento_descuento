@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ShieldCheck, Monitor, AlertTriangle, ChevronRight, XCircle, Copy, Check } from 'lucide-react';
-import { UnamLogo, PsicoUnamLogo } from './InstitutionalLogos';
 
 interface ConsentScreenProps {
   folio: string;
@@ -39,12 +38,23 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
       className="max-w-4xl mx-auto px-4 py-4 md:py-8"
     >
       <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
+        {/* Franja superior institucional */}
         <div className="h-2 bg-gradient-to-r from-[#0B2341] via-[#1E3A8A] to-[#C49A45]" />
 
+        {/* Encabezado con Escudos Oficiales */}
         <div className="p-6 md:p-10 border-b border-slate-100 bg-slate-50/50">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <UnamLogo className="w-16 h-20 md:w-20 md:h-24 flex-shrink-0" />
+            
+            {/* ESCUDO UNAM (Izquierda) */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <img
+                src="/logo-unam.png"
+                alt="Escudo Universidad Nacional Autónoma de México"
+                className="h-24 md:h-28 w-auto object-contain"
+              />
+            </div>
 
+            {/* Texto Central Oficial */}
             <div className="text-center flex-1">
               <h1 className="text-sm md:text-base font-serif font-black tracking-wider text-[#0B2341] uppercase">
                 Universidad Nacional Autónoma de México
@@ -57,9 +67,18 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
               </h3>
             </div>
 
-            <PsicoUnamLogo className="w-16 h-20 md:w-20 md:h-24 flex-shrink-0" />
+            {/* LOGO FACULTAD DE PSICOLOGÍA (Derecha) */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <img
+                src="/logo-psicologia.png"
+                alt="Logotipo Facultad de Psicología UNAM"
+                className="h-24 md:h-28 w-auto object-contain"
+              />
+            </div>
+
           </div>
 
+          {/* Folio Digital Asignado */}
           <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-500 uppercase tracking-wider">Folio institucional:</span>
@@ -79,6 +98,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
           </div>
         </div>
 
+        {/* Cuerpo del Consentimiento Informado */}
         <div className="p-6 md:p-10 space-y-6 text-slate-700 text-sm md:text-[15px] leading-relaxed">
           <div className="border-b border-slate-100 pb-4">
             <h2 className="text-lg md:text-xl font-serif font-bold text-slate-900 tracking-tight">
@@ -97,6 +117,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             Este cuestionario tiene como objetivo estudiar la toma de decisiones sobre consecuencias que ocurren en diferentes puntos en el tiempo. A continuación, encontrarás información importante sobre el estudio antes de decidir si deseas participar.
           </p>
 
+          {/* Sección 1 */}
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-base">1. ¿En qué consiste este estudio?</h4>
             <p className="text-slate-600">
@@ -104,6 +125,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </p>
           </div>
 
+          {/* Sección 2: Requisitos Técnicos */}
           <div className="space-y-3">
             <h4 className="font-bold text-slate-900 text-base flex items-center gap-2">
               <Monitor className="w-5 h-5 text-blue-600" />
@@ -138,6 +160,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </div>
           </div>
 
+          {/* Sección 3 */}
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-base">3. ¿Qué se te pedirá hacer?</h4>
             <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
@@ -149,6 +172,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </ul>
           </div>
 
+          {/* Sección 4 */}
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-base">4. ¿Las decisiones involucran dinero real?</h4>
             <p className="text-slate-600">
@@ -156,6 +180,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </p>
           </div>
 
+          {/* Sección 5 */}
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-base">5. ¿Existen riesgos o molestias por participar?</h4>
             <p className="text-slate-600">
@@ -163,6 +188,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </p>
           </div>
 
+          {/* Sección 6 */}
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-base">6. ¿Cuáles son los beneficios de participar?</h4>
             <p className="text-slate-600">
@@ -170,6 +196,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </p>
           </div>
 
+          {/* Sección 7 */}
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-base">7. Confidencialidad y protección de datos</h4>
             <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
@@ -180,6 +207,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </ul>
           </div>
 
+          {/* Sección 8 */}
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-base">8. Participación voluntaria y derecho al retiro</h4>
             <p className="text-slate-600">
@@ -187,6 +215,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </p>
           </div>
 
+          {/* Sección 9 */}
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-base">9. Contacto para dudas o aclaraciones</h4>
             <p className="text-slate-600">
@@ -194,6 +223,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </p>
           </div>
 
+          {/* Firma institucional */}
           <div className="pt-6 border-t border-slate-200">
             <p className="text-slate-600 text-xs italic mb-4">
               El Laboratorio de Comportamiento y Adaptación de la Facultad de Psicología agradece tu tiempo y participación.
@@ -205,6 +235,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
             </div>
           </div>
 
+          {/* DECLARACIÓN DE CONSENTIMIENTO */}
           <div className="mt-8 pt-6 border-t-2 border-slate-200 bg-blue-50/40 -mx-6 md:-mx-10 px-6 md:px-10 py-6">
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck className="w-5 h-5 text-blue-700 flex-shrink-0" />
@@ -243,6 +274,7 @@ export function ConsentScreen({ folio, onAccept, onDecline }: ConsentScreenProps
               </label>
             </div>
 
+            {/* Botones de acción */}
             <div className="mt-6 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <button
                 type="button"
