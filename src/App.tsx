@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Info, Banknote, Calendar, CheckCircle2, User, Coffee } from 'lucide-react';
 import { Screen, BlockData, Choice } from './types';
@@ -108,6 +108,7 @@ export default function App() {
   const [compAnswer, setCompAnswer] = useState<string | null>(null);
   const [compShowResult, setCompShowResult] = useState(false);
   const [compIsCorrect, setCompIsCorrect] = useState<boolean | null>(null);
+  const botonAccionCompRef = useRef<HTMLDivElement>(null);
 
   const effectiveGender = useMemo(() => {
     if (gender === 'Otro') {
@@ -116,12 +117,14 @@ export default function App() {
     return gender;
   }, [gender, genderCustom]);
 
+  // Handle countdown resetting when entering the feedback screen
   useEffect(() => {
     if (screen === 'feedback') {
       setCountdown(30);
     }
   }, [screen]);
 
+  // Handle active countdown logic
   useEffect(() => {
     if (screen !== 'feedback' || countdown <= 0) return;
 
@@ -138,6 +141,16 @@ export default function App() {
     }
   }, [screen, currentBlockIndex]);
 
+  // Auto-ajuste de scroll para que el botón de confirmación siempre sea visible
+  useEffect(() => {
+    if (screen === 'comprehension' && (compAnswer || compShowResult)) {
+      setTimeout(() => {
+        botonAccionCompRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+  }, [compAnswer, compShowResult, screen]);
+
+  // Restore assignment state from localStorage to avoid re-consulting doGet
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -187,6 +200,7 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [assignmentId, participantId, sessionNum, age, gender, genderCustom, assignedSequence, assignedMagnitudes, screen, currentBlockIndex, responses]);
 
+  // Scroll to top when changing screens or active blocks
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [screen, currentBlockIndex]);
@@ -351,7 +365,6 @@ export default function App() {
 
           setSavedEnsayos(ensayosFinales);
 
-          // Enviamos a Google Sheets incluyendo edad, género, sesión y dispositivo
           await enviarResultadosAGoogle(
             participantId, 
             ensayosFinales, 
@@ -893,7 +906,8 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            <div>
+            {/* Action Buttons con ref para scroll automático */}
+            <div ref={botonAccionCompRef}>
               {isConfirmationStep ? (
                 <button
                   onClick={() => {
